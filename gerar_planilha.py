@@ -1,9 +1,7 @@
 import pandas as pd
 
-# Carregar a planilha organizada
 df = pd.read_excel('./planilha/planilha_organizada.xlsx')
 
-# Renomear fornecedores
 renomear_fornecedores = {
     "BAZZI COMPANY COM IMP E EXP DE PRODUTOS ELETRÔNICOS EIRELI": "X-CELL",
     "RIO CHENS IMPORT. E EXPORTAD. LTDA": "BESTFER",
@@ -14,7 +12,6 @@ renomear_fornecedores = {
 }
 df['Fornecedor'] = df['Fornecedor'].replace(renomear_fornecedores)
 
-# Corrigir fornecedor com base no SKU
 siglas_sku = {
     'BFH': 'BESTFER',
     'HTZ': 'HUTZ',
@@ -37,8 +34,6 @@ def corrigir_fornecedor(row):
 
 df['Fornecedor'] = df.apply(corrigir_fornecedor, axis=1)
 
-# Remover registros inválidos
-
 
 def is_valido(sku):
     sku = str(sku).upper()
@@ -46,8 +41,6 @@ def is_valido(sku):
 
 
 df = df[df['Código (SKU)'].apply(is_valido)]
-
-# Separar descrição e variação
 
 
 def separar_descricao_variacao(descricao):
@@ -59,7 +52,6 @@ def separar_descricao_variacao(descricao):
     return descricao.strip(), ''
 
 
-# Aplicar separação apenas para produtos COM variação (pai ou filho)
 descricoes = []
 variacoes = []
 
@@ -74,7 +66,6 @@ for _, row in df.iterrows():
 df['Descrição'] = descricoes
 df['Descrição da Variação'] = variacoes
 
-# Renomear colunas auxiliares
 df['SKU Pai'] = df['Código do pai']
 df['Código SKU'] = df['Código (SKU)']
 df['Código do Fornecedor'] = df['Cód do Fornecedor']
@@ -84,7 +75,6 @@ df['Largura'] = df['Largura embalagem']
 df['Altura'] = df['Altura embalagem']
 df['Comprimento'] = df['Comprimento embalagem']
 
-# Separar por categoria
 sem_variacao = df[df['Categoria'] == 'SEM VARIAÇÃO']
 kits = df[df['Categoria'] == 'KIT']
 pais = df[df['Categoria'] == 'VARIAÇÃO - PAI']
@@ -92,18 +82,14 @@ filhos = df[df['Categoria'] == 'VARIAÇÃO - FILHO']
 
 resultado = []
 
-# Ordenar todos os blocos com base no Fornecedor
 todos_fornecedores = sorted(df['Fornecedor'].dropna().astype(str).unique())
 
 for fornecedor in todos_fornecedores:
-    # Filtra todos os registros do fornecedor atual
     fornecedor_df = df[df['Fornecedor'] == fornecedor]
 
-    # 1. Produtos sem variação
     sem_var = fornecedor_df[fornecedor_df['Categoria'] == 'SEM VARIAÇÃO']
     resultado.append(sem_var)
 
-    # 2. Produtos com variação
     pais = fornecedor_df[fornecedor_df['Categoria'] == 'VARIAÇÃO - PAI']
     filhos = fornecedor_df[fornecedor_df['Categoria'] == 'VARIAÇÃO - FILHO']
 
@@ -112,14 +98,11 @@ for fornecedor in todos_fornecedores:
         if not filhos_do_pai.empty:
             resultado.append(filhos_do_pai)
 
-    # 3. Kits
     kits = fornecedor_df[fornecedor_df['Categoria'] == 'KIT']
     resultado.append(kits)
 
-# Junta todos os blocos
 df_final = pd.concat(resultado, ignore_index=True)
 
-# Criar colunas de verificação: "Tem ..."
 df_final['Tem Peso'] = df_final[['Peso líquido', 'Peso bruto']
                                 ].notna().any(axis=1).map({True: 'Sim', False: 'Não'})
 df_final['Tem Dimensões'] = df_final[['Largura', 'Altura', 'Comprimento']
@@ -127,16 +110,13 @@ df_final['Tem Dimensões'] = df_final[['Largura', 'Altura', 'Comprimento']
 df_final['Tem Descrição Complementar'] = df_final['Descrição complementar'].notna(
 ).map({True: 'Sim', False: 'Não'})
 
-# Define colunas que serão exportadas (omitindo as brutas)
 colunas_finais = [
     'Fornecedor', 'Descrição', 'SKU Pai', 'Código SKU', 'Código do Fornecedor',
     'Descrição da Variação',
     'Tem Peso', 'Tem Dimensões', 'Tem Descrição Complementar'
 ]
 
-# Aplica o filtro
 df_final = df_final[colunas_finais]
 
-# Exporta o Excel
 df_final.to_excel('./planilha/planilha_formatada.xlsx', index=False)
 print("Planilha final formatada salva com sucesso: planilha_formatada.xlsx")
