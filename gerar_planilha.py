@@ -103,12 +103,16 @@ for fornecedor in todos_fornecedores:
 
 df_final = pd.concat(resultado, ignore_index=True)
 
-df_final['Tem Peso'] = df_final[['Peso líquido', 'Peso bruto']
-                                ].notna().any(axis=1).map({True: 'Sim', False: 'Não'})
-df_final['Tem Dimensões'] = df_final[['Largura', 'Altura', 'Comprimento']
-                                     ].notna().all(axis=1).map({True: 'Sim', False: 'Não'})
-df_final['Tem Descrição Complementar'] = df_final['Descrição complementar'].notna(
+df_final['Tem Peso'] = (
+    (df_final[['Peso líquido', 'Peso bruto']].fillna(0) != 0).any(axis=1)
 ).map({True: 'Sim', False: 'Não'})
+df_final['Tem Dimensões'] = (
+    (df_final[['Largura', 'Altura', 'Comprimento']].fillna(0) != 0).all(axis=1)
+).map({True: 'Sim', False: 'Não'})
+df_final['Tem Descrição Complementar'] = (
+    df_final['Descrição complementar'].fillna('').str.strip() != ''
+).map({True: 'Sim', False: 'Não'})
+
 
 colunas_finais = [
     'Fornecedor', 'Descrição', 'SKU Pai', 'Código SKU', 'Código do Fornecedor',
